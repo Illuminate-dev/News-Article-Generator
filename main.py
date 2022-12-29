@@ -1,15 +1,20 @@
 import os
 import openai
+import re
 from dotenv import load_dotenv
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+TEMPERATURE=1
+
 # PROMPT CONFIG
-TOPIC_MESSAGE="Write a news article about {}."
-NOTES_MESSAGE="The article should include the following information:\n{}"
-CAPTION_MESSAGE="Generate two captions for the article which clearly depict a scene. Surround the captions with brackets and choose appropriate locations within the article to place them."
-REQUIREMENTS_MESSAGE="Include a title at the start surrounded by parentheses. This is a lengthy article and must be at least {} words long."
+TOPIC_MESSAGE="Write a news article about {}.\n"
+NOTES_MESSAGE="The article should include the following information:\n{}\n"
+CAPTION_MESSAGE="Generate two captions for the article which clearly depict a scene. Surround the captions with brackets like this: [caption here] and choose appropriate locations within the article to place them. "
+REQUIREMENTS_MESSAGE="Include a title at the start surrounded by parentheses like this: (title here here). This is a lengthy article and must be at least {} words long."
+
+IMAGE_PROMPT="An award winning professional photo of \"{}\", realistic lighting, photojournalism from The New York Times"
 
 
 def create_prompt():
@@ -40,10 +45,20 @@ def create_prompt():
 
 prompt = create_prompt()
 
-response = openai.Completion.create(engine="text-davinci-003", prompt=prompt, max_tokens=2048)  
+response = openai.Completion.create(engine="text-davinci-003", prompt=prompt, max_tokens=3850, temperature=TEMPERATURE)
 
-print(response.get('choices')[0]['text'])
+text = response.get("choices")[0]["text"]
+
+print(text)
 
 text_file = open("out.txt", "w")
-text_file.write(response.get('choices')[0]["text"])
+text_file.write(text)
 text_file.close()
+
+title = re.findall('\((.*?)\)', text)[0]
+print(f'Title: {title}')
+
+captions = re.findall('\[(.*?)\]', text)
+for caption in captions:
+    image = openai.Image.create(prompt=IMAGE_PROMPT.format(caption), n=1, size="1024x1024")
+    print(image['data'][0]['url'])
