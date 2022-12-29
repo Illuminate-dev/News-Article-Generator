@@ -14,7 +14,7 @@ NOTES_MESSAGE="The article should include the following information:\n{}\n"
 CAPTION_MESSAGE="Generate two captions for the article which clearly depict a scene. Surround the captions with brackets like this: [caption here] and choose appropriate locations within the article to place them. "
 REQUIREMENTS_MESSAGE="Include a title at the start surrounded by parentheses like this: (title here here). This is a lengthy article and must be at least {} words long."
 
-IMAGE_PROMPT="An award winning professional photo of \"{}\", realistic lighting, photojournalism from The New York Times"
+IMAGE_PROMPT="An award winning professional photo with the caption of \"{}\", realistic lighting, photojournalism from The New York Times"
 
 
 def create_prompt():
