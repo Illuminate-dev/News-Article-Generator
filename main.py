@@ -1,7 +1,12 @@
 import os
 import openai
 import re
+import requests
+from docx import Document
 from dotenv import load_dotenv
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches
+
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -16,10 +21,16 @@ REQUIREMENTS_MESSAGE="Include a title at the start surrounded by parentheses lik
 
 IMAGE_PROMPT="An award winning professional photo with the caption of \"{}\", realistic lighting, photojournalism from The New York Times"
 
+def download_image(url, name):
+    img = requests.get(url).content
+    path = 'png/' + name + '.png'
+    if not os.path.isdir('png'):
+        os.mkdir('png')
+    with open(path, "wb") as f:
+       f.write(img) 
+    return path
 
 def create_prompt():
-
-
     topic = input("What to write about: ")
     notes = []
     while True:
@@ -42,23 +53,50 @@ def create_prompt():
 
     return prompt
 
+def generate(prompt):
+    response = openai.Completion.create(engine="text-davinci-003", prompt=prompt, max_tokens=3850, temperature=TEMPERATURE)
+
+    text = response.get("choices")[0]["text"]
+
+    print(text)
+
+    title = re.findall('\((.*?)\)', text)[0]
+    print(f'Title: {title}')
+
+    captions = re.findall('\[(.*?)\]', text)
+    paths = []
+
+    for caption in captions:
+        image = openai.Image.create(prompt=IMAGE_PROMPT.format(caption), n=1, size="1024x1024")
+        url = image['data'][0]['url']
+        filename = '_'.join(caption.split(' '))[0:14]
+        path = download_image(url, filename)
+        paths.append(path)
+    
+    return text, title, captions, paths
+
+def save_doc(text, title, captions, paths, filename):
+    document = Document()
+
+    doc_title = document.add_heading(title)
+    doc_title.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    pathindex = 0
+    for line in text.split('\n'):
+        if len(line) == 0 or line.startswith("("):
+            continue
+        elif line.startswith("["):
+            document.add_picture(paths[pathindex], Inches(5))  
+            document.add_paragraph(captions[pathindex])
+            pathindex += 1
+        else:
+            doc_pg = document.add_paragraph(line) 
+
+
+        document.save(filename)
 
 prompt = create_prompt()
 
-response = openai.Completion.create(engine="text-davinci-003", prompt=prompt, max_tokens=3850, temperature=TEMPERATURE)
-
-text = response.get("choices")[0]["text"]
-
-print(text)
-
-text_file = open("out.txt", "w")
-text_file.write(text)
-text_file.close()
-
-title = re.findall('\((.*?)\)', text)[0]
-print(f'Title: {title}')
-
-captions = re.findall('\[(.*?)\]', text)
-for caption in captions:
-    image = openai.Image.create(prompt=IMAGE_PROMPT.format(caption), n=1, size="1024x1024")
-    print(image['data'][0]['url'])
+text, title, captions, paths = generate(prompt=prompt)
+filename = '_'.join(title.split(' '))[0:14] + '.docx'
+save_doc(text, title, captions, paths, filename)
