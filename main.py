@@ -5,7 +5,8 @@ import requests
 from docx import Document
 from dotenv import load_dotenv
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Inches
+from docx.shared import Inches, Pt
+from docx.enum.style import WD_STYLE_TYPE
 
 load_dotenv()
 
@@ -17,7 +18,7 @@ TEMPERATURE=1
 TOPIC_MESSAGE="Write a news article about {}.\n"
 NOTES_MESSAGE="The article should include the following information:\n{}\n"
 CAPTION_MESSAGE="Generate two captions for the article which clearly depict a scene. Surround the captions with brackets like this: [caption here] and choose appropriate locations within the article to place them. "
-REQUIREMENTS_MESSAGE="Include a title at the start surrounded by parentheses like this: (title here here). This is a lengthy article and must be at least {} words long."
+REQUIREMENTS_MESSAGE="Include a title at the start surrounded by parentheses like this: (title here). This is a lengthy article and must be at least {} words long."
 
 IMAGE_PROMPT="An award winning professional photo with the caption of \"{}\", realistic lighting, photojournalism from The New York Times"
 
@@ -76,22 +77,48 @@ def generate(prompt):
     return text, title, captions, paths
 
 def save_doc(text, title, captions, paths, filename):
+    pg_counter = 0
+
     document = Document()
 
     doc_title = document.add_heading(title)
     doc_title.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    pg_counter += 1
+
+    text_style = document.styles.add_style("text_01", WD_STYLE_TYPE.PARAGRAPH)
+    text_style.font.name = "Times New Roman"
+    text_style.font.size = Pt(13)
+
+    caption_style = document.styles.add_style("caption_01", WD_STYLE_TYPE.PARAGRAPH)
+    caption_style.font.size = Pt(9)
+    caption_style.font.name = "Times New Roman"
 
     pathindex = 0
     for line in text.split('\n'):
         if len(line) == 0 or line.startswith("("):
             continue
         elif line.startswith("["):
-            document.add_picture(paths[pathindex], Inches(5))  
-            document.add_paragraph(captions[pathindex])
+
+            document.add_picture(paths[pathindex], Inches(5))   
+
+            pg_counter += 1
+
+            document.paragraphs[pg_counter-1].paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER 
+            
+            paragraph = document.add_paragraph(captions[pathindex])
+
+            pg_counter+= 1
+
+            paragraph.style = caption_style
+            paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
             pathindex += 1
         else:
             doc_pg = document.add_paragraph(line) 
-
+            doc_pg.style = text_style
+            pg_counter += 1
+        
 
         document.save(filename)
 
