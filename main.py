@@ -54,7 +54,7 @@ def create_prompt():
 
     return prompt
 
-def generate(prompt):
+def generate(prompt, images=True):
     response = openai.Completion.create(engine="text-davinci-003", prompt=prompt, max_tokens=3850, temperature=TEMPERATURE)
 
     text = response.get("choices")[0]["text"]
@@ -67,12 +67,13 @@ def generate(prompt):
     captions = re.findall('\[(.*?)\]', text)
     paths = []
 
-    for caption in captions:
-        image = openai.Image.create(prompt=IMAGE_PROMPT.format(caption), n=1, size="1024x1024")
-        url = image['data'][0]['url']
-        filename = '_'.join(caption.split(' '))[0:14]
-        path = download_image(url, filename)
-        paths.append(path)
+    if images:
+        for caption in captions:
+            image = openai.Image.create(prompt=IMAGE_PROMPT.format(caption), n=1, size="1024x1024")
+            url = image['data'][0]['url']
+            filename = '_'.join(caption.split(' '))[0:14]
+            path = download_image(url, filename)
+            paths.append(path)
     
     return text, title, captions, paths
 
@@ -122,8 +123,13 @@ def save_doc(text, title, captions, paths, filename):
 
         document.save(filename)
 
-prompt = create_prompt()
+def main():
+    prompt = create_prompt()
 
-text, title, captions, paths = generate(prompt=prompt)
-filename = '_'.join(title.split(' '))[0:14] + '.docx'
-save_doc(text, title, captions, paths, filename)
+    text, title, captions, paths = generate(prompt=prompt)
+    filename = '_'.join(title.split(' '))[0:14] + '.docx'
+    save_doc(text, title, captions, paths, filename)
+
+if __name__ == '__main__':
+
+    main(save_doc)
