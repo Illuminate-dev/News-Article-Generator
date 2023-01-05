@@ -14,6 +14,8 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 TEMPERATURE=1
 
+MODEL="text-davinci-003"
+
 # PROMPT CONFIG
 TOPIC_MESSAGE="Write a news article about {}.\n"
 NOTES_MESSAGE="The article should include the following information:\n{}\n"
@@ -55,7 +57,7 @@ def create_prompt():
     return prompt
 
 def generate(prompt, images=True):
-    response = openai.Completion.create(engine="text-davinci-003", prompt=prompt, max_tokens=3850, temperature=TEMPERATURE)
+    response = openai.Completion.create(engine=MODEL, prompt=prompt, max_tokens=3850, temperature=TEMPERATURE)
 
     text = response.get("choices")[0]["text"]
 

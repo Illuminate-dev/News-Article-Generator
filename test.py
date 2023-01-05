@@ -1,14 +1,20 @@
+import argparse
 from enum import Enum
 from math import exp, pow, sqrt
 
 import nltk
 import spacy
-import tensorflow as tf
-import tensorflow_hub as hub
 from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
 from sentence_transformers import SentenceTransformer, util
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity as cs_sim
+
+parser = argparse.ArgumentParser(
+                    prog = 'SemanticTest',
+                    description = 'Semantically compares two text files')
+parser.add_argument('file1') 
+parser.add_argument('file2')
+args = parser.parse_args()
 
 
 nlp = spacy.load("en_core_web_md")
@@ -18,10 +24,10 @@ class VectorizerType(Enum):
     COUNT = 2
     TFIDF = 3
 
-with open('data.txt', "r") as f:
+with open(args.file1, "r") as f:
     reference = f.read()
 
-with open('out.txt', 'r') as f:
+with open(args.file2, 'r') as f:
     generated = f.read()
 
 # https://newscatcherapi.com/blog/ultimate-guide-to-text-similarity-with-python
@@ -117,6 +123,8 @@ cosine_word2vec = cosine(reference, generated, VectorizerType.WORD2VEC)
 cosine_count = cosine(reference, generated, VectorizerType.COUNT)
 cosine_tfidf = cosine(reference, generated, VectorizerType.TFIDF)
 
+import tensorflow as tf
+import tensorflow_hub as hub
 use_score = google_use([reference, generated])
 
 stsb_score = stsb([reference, generated])
