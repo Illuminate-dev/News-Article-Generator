@@ -7,14 +7,17 @@ from dotenv import load_dotenv
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt
 from docx.enum.style import WD_STYLE_TYPE
+from serpapi import GoogleSearch
 
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+serpapi_key = os.getenv('SERPAPI_KEY')
 
 TEMPERATURE=1
 
-MODEL="text-davinci-003"
+DAVINCI_MODEL="text-davinci-003"
+CUSTOM_MODEL=""
 
 # PROMPT CONFIG
 TOPIC_MESSAGE="Write a news article about {}.\n"
@@ -56,8 +59,8 @@ def create_prompt():
 
     return prompt
 
-def generate(prompt, images=True):
-    response = openai.Completion.create(engine=MODEL, prompt=prompt, max_tokens=3850, temperature=TEMPERATURE)
+def generate(prompt, model, images=True):
+    response = openai.Completion.create(engine=model, prompt=prompt, max_tokens=3250, temperature=TEMPERATURE)
 
     text = response.get("choices")[0]["text"]
 
@@ -78,6 +81,15 @@ def generate(prompt, images=True):
             paths.append(path)
     
     return text, title, captions, paths
+
+def search_image(query):
+    search = GoogleSearch({
+        'q': query,
+        'tbm': 'isch',
+        'api_key': serpapi_key
+    })
+    return search['images_results'][0]['original']
+
 
 def save_doc(text, title, captions, paths, filename):
     pg_counter = 0
@@ -126,11 +138,33 @@ def save_doc(text, title, captions, paths, filename):
         document.save(filename)
 
 def main():
-    prompt = create_prompt()
-
-    text, title, captions, paths = generate(prompt=prompt)
-    filename = '_'.join(title.split(' '))[0:14] + '.docx'
-    save_doc(text, title, captions, paths, filename)
+    print("""[0]: DALL-E create images
+    [1]: SerpAPI find images
+    [2]: provide images""")
+    choice = int(input("Enter choice: "))
+    if choice == 0:
+        prompt = create_prompt()
+        text, title, captions, paths = generate(prompt=prompt, model=DAVINCI_MODEL)
+        filename = '_'.join(title.split(' '))[0:14] + '.docx'
+        save_doc(text, title, captions, paths, filename)
+    elif choice == 1:
+        prompt = create_prompt()
+        text, title, captions, paths = generate(prompt, model=CUSTOM_MODEL, images=False)
+        for caption in captions:
+            link = search_image(caption)
+            path = download_image(link)
+            paths.append(path)
+        filename = '_.'.join(title.split(' '))[0:14] + '.docx'
+        save_doc(text, title, captions, paths, filename)
+    elif choice == 2:
+        prompt = create_prompt()
+        text, title, captions, paths = generate(prompt, model=CUSTOM_MODEL, images=False)
+        newtext = ''
+        for line in text.splitlines():
+            if not line.startswith('['):
+                newtext += line + '\n'
+        filename = '_.'.join(title.split(' '))[0:14] + '.docx'
+        save_doc(newtext, title, captions, paths, filename)
 
 if __name__ == '__main__':
 
