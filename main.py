@@ -138,9 +138,10 @@ def save_doc(text, title, captions, paths, filename):
         document.save(filename)
 
 def main():
-    print("""[0]: DALL-E create images
-    [1]: SerpAPI find images
-    [2]: provide images""")
+    print(
+"""[0]: DALL-E create images
+[1]: SerpAPI find images
+[2]: provide images""")
     choice = int(input("Enter choice: "))
     if choice == 0:
         prompt = create_prompt()
@@ -168,4 +169,4 @@ def main():
 
 if __name__ == '__main__':
 
-    main(save_doc)
+    main()
