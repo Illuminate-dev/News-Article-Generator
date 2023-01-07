@@ -1,12 +1,14 @@
 import os
-import openai
 import re
+import datetime
+
+import openai
 import requests
 from docx import Document
-from dotenv import load_dotenv
+from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt
-from docx.enum.style import WD_STYLE_TYPE
+from dotenv import load_dotenv
 from serpapi import GoogleSearch
 
 load_dotenv()
@@ -17,7 +19,17 @@ serpapi_key = os.getenv('SERPAPI_KEY')
 TEMPERATURE=1
 
 DAVINCI_MODEL="text-davinci-003"
-CUSTOM_MODEL=""
+# WHEN USING CUSTOM MODEL, PROMPTS HAVE TO END WITH "\n\n###\n\n"
+# DONT START WITH, write a news article about
+# include stop=[" END"]
+CUSTOM_MODEL="davinci:ft-personal-2023-01-06-23-00-19"
+
+TRAINING_DATE = datetime.date(2021, 6, 1)
+
+CUSTOM_PROMPT_1="{}.\n"
+CUSTOM_PROMPT_2="Include the following information:\n{}\nPeople/Organizations:\n{}"
+CUSTOM_PROMPT_3="Date: {}"
+CUSTOM_PROMPT_END = "\n\n###\n\n"
 
 # PROMPT CONFIG
 TOPIC_MESSAGE="Write a news article about {}.\n"
@@ -36,7 +48,38 @@ def download_image(url, name):
        f.write(img) 
     return path
 
+def create_custom_prompt():
+    prompt = ""
+    topic = input("Write a news article about: ")
+    prompt += CUSTOM_PROMPT_1.format(topic)
+
+    inp = input("mm/yyyy of event: (put nothing if no event)").split('/')
+    date = datetime.date(int(inp[1]),int(inp[0]),1)
+    if date >= TRAINING_DATE:
+        notes = []
+        while True:
+            line = input("Notes of info to add (empty for none): ")
+            if line:
+                notes.append(line)
+            elif len(notes)!=0:
+                break
+        qoutes = []
+        while True:
+            line = input("People/Qoutes to add (empty for none): ")
+            if line:
+                qoutes.append(line)
+            elif len(qoutes) != 0:
+                break
+        prompt += CUSTOM_PROMPT_2.format('\n'.join(notes), '\n'.join(qoutes))
+    else:
+        prompt += CUSTOM_PROMPT_3.format(date.strftime("%B %Y"))
+    prompt += CUSTOM_PROMPT_END
+    return prompt
+    
+
+
 def create_prompt():
+
     topic = input("What to write about: ")
     notes = []
     while True:
@@ -60,7 +103,7 @@ def create_prompt():
     return prompt
 
 def generate(prompt, model, images=True):
-    response = openai.Completion.create(engine=model, prompt=prompt, max_tokens=3250, temperature=TEMPERATURE)
+    response = openai.Completion.create(engine=model, prompt=prompt, max_tokens=3500 if model.startswith('text') else 2049-(len(prompt)//4)-15, temperature=TEMPERATURE)
 
     text = response.get("choices")[0]["text"]
 
@@ -149,8 +192,9 @@ def main():
         filename = '_'.join(title.split(' '))[0:14] + '.docx'
         save_doc(text, title, captions, paths, filename)
     elif choice == 1:
-        prompt = create_prompt()
+        prompt = create_custom_prompt()
         text, title, captions, paths = generate(prompt, model=CUSTOM_MODEL, images=False)
+        text = text.replace("END", '')
         for caption in captions:
             link = search_image(caption)
             path = download_image(link)
@@ -158,8 +202,9 @@ def main():
         filename = '_.'.join(title.split(' '))[0:14] + '.docx'
         save_doc(text, title, captions, paths, filename)
     elif choice == 2:
-        prompt = create_prompt()
+        prompt = create_custom_prompt()
         text, title, captions, paths = generate(prompt, model=CUSTOM_MODEL, images=False)
+        text = text[:-4].replace("END", '')
         newtext = ''
         for line in text.splitlines():
             if not line.startswith('['):

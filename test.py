@@ -4,18 +4,12 @@ from math import exp, pow, sqrt
 
 import nltk
 import spacy
+import tensorflow as tf
+import tensorflow_hub as hub
 from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
 from sentence_transformers import SentenceTransformer, util
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity as cs_sim
-
-parser = argparse.ArgumentParser(
-                    prog = 'SemanticTest',
-                    description = 'Semantically compares two text files')
-parser.add_argument('file1') 
-parser.add_argument('file2')
-args = parser.parse_args()
-
 
 nlp = spacy.load("en_core_web_md")
 
@@ -23,12 +17,6 @@ class VectorizerType(Enum):
     WORD2VEC = 1 
     COUNT = 2
     TFIDF = 3
-
-with open(args.file1, "r") as f:
-    reference = f.read()
-
-with open(args.file2, 'r') as f:
-    generated = f.read()
 
 # https://newscatcherapi.com/blog/ultimate-guide-to-text-similarity-with-python
 def jaccard_similarity(x,y):
@@ -107,27 +95,40 @@ def stsb(sentences):
         similarity.append(row)
     return similarity[0][1]
 
-bleu_score = sentence_bleu(reference, generated, smoothing_function=SmoothingFunction().method4)
+def main(file1, file2):
+    with open(file1, "r") as f:
+        reference = f.read()
 
-# Jaccard Index
-jaccard_score = jaccard(reference, generated)
+    with open(file2, 'r') as f:
+        generated = f.read()
+    bleu_score = sentence_bleu(reference, generated, smoothing_function=SmoothingFunction().method4)
 
-# Euclidian Distance
-euclidian_word2vec = euclidian(reference, generated, VectorizerType.WORD2VEC)
-euclidian_count = euclidian(reference, generated, VectorizerType.COUNT)
-euclidian_tfidf = euclidian(reference, generated, VectorizerType.TFIDF)
+    # Jaccard Index
+    jaccard_score = jaccard(reference, generated)
 
-# Cosine Similarity
+    # Euclidian Distance
+    euclidian_word2vec = euclidian(reference, generated, VectorizerType.WORD2VEC)
+    euclidian_count = euclidian(reference, generated, VectorizerType.COUNT)
+    euclidian_tfidf = euclidian(reference, generated, VectorizerType.TFIDF)
 
-cosine_word2vec = cosine(reference, generated, VectorizerType.WORD2VEC)
-cosine_count = cosine(reference, generated, VectorizerType.COUNT)
-cosine_tfidf = cosine(reference, generated, VectorizerType.TFIDF)
+    # Cosine Similarity
 
-import tensorflow as tf
-import tensorflow_hub as hub
-use_score = google_use([reference, generated])
+    cosine_word2vec = cosine(reference, generated, VectorizerType.WORD2VEC)
+    cosine_count = cosine(reference, generated, VectorizerType.COUNT)
+    cosine_tfidf = cosine(reference, generated, VectorizerType.TFIDF)
 
-stsb_score = stsb([reference, generated])
+    use_score = google_use([reference, generated])
+
+    stsb_score = stsb([reference, generated])
 
 
-print(f'{bleu_score=}\n{jaccard_score=}\n{euclidian_word2vec=}\n{euclidian_count=}\n{euclidian_tfidf=}\n{cosine_word2vec=}\n{cosine_count=}\n{cosine_tfidf=}\n{use_score=}\n{stsb_score=}')
+    print(f'{bleu_score=}\n{jaccard_score=}\n{euclidian_word2vec=}\n{euclidian_count=}\n{euclidian_tfidf=}\n{cosine_word2vec=}\n{cosine_count=}\n{cosine_tfidf=}\n{use_score=}\n{stsb_score=}')
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+                        prog = 'SemanticTest',
+                        description = 'Semantically compares two text files')
+    parser.add_argument('file1') 
+    parser.add_argument('file2')
+    args = parser.parse_args()
+    main(args.file1, args.file2)
