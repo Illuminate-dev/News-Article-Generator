@@ -131,7 +131,7 @@ def search_image(query):
         'tbm': 'isch',
         'api_key': serpapi_key
     })
-    return search['images_results'][0]['original']
+    return search.get_dict()['images_results'][0]['original']
 
 
 def save_doc(text, title, captions, paths, filename):
@@ -154,7 +154,7 @@ def save_doc(text, title, captions, paths, filename):
 
     pathindex = 0
     for line in text.split('\n'):
-        if len(line) == 0 or line.startswith("("):
+        if len(line) == 0 or line.startswith("(") or line.startswith(" ("):
             continue
         elif line.startswith("["):
 
@@ -197,7 +197,8 @@ def main():
         text = text.replace("END", '')
         for caption in captions:
             link = search_image(caption)
-            path = download_image(link)
+            filename = '_'.join(caption.split(' '))[0:14]
+            path = download_image(link, filename)
             paths.append(path)
         filename = '_.'.join(title.split(' '))[0:14] + '.docx'
         save_doc(text, title, captions, paths, filename)

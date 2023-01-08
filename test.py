@@ -10,6 +10,7 @@ from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
 from sentence_transformers import SentenceTransformer, util
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity as cs_sim
+from textstat.textstat import textstat
 
 nlp = spacy.load("en_core_web_md")
 
@@ -121,8 +122,19 @@ def main(file1, file2):
 
     stsb_score = stsb([reference, generated])
 
+    flesch_kincaid_1 = file1 + ": " +str(textstat.flesch_kincaid_grade(reference))
+    flesch_kincaid_2 = file2 + ": " +str(textstat.flesch_kincaid_grade(generated))
+    
+    flesch_reading_1 = file1 + ": " +str(textstat.flesch_reading_ease(reference))
+    flesch_reading_2 = file2 + ": " +str(textstat.flesch_reading_ease(generated))
 
-    print(f'{bleu_score=}\n{jaccard_score=}\n{euclidian_word2vec=}\n{euclidian_count=}\n{euclidian_tfidf=}\n{cosine_word2vec=}\n{cosine_count=}\n{cosine_tfidf=}\n{use_score=}\n{stsb_score=}')
+    readability_1 = textstat.text_standard(reference, float_output=True)
+    readability_2 = textstat.text_standard(generated, float_output=True)
+
+
+
+    print(f"""{bleu_score=}\n{jaccard_score=}\n{euclidian_word2vec=}\n{euclidian_count=}\n{euclidian_tfidf=}\n{cosine_word2vec=}\n{cosine_count=}\n{cosine_tfidf=}\n{use_score=}
+{stsb_score=}\n{flesch_kincaid_1}\n{flesch_kincaid_2}\n{flesch_reading_1}\n{flesch_reading_2}\n{readability_1=}\n{readability_2=}""")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

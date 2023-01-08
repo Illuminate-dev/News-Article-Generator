@@ -54,6 +54,7 @@ pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pydantic==1.10.4
 pyFUME==0.2.25
+pyphen==0.13.2
 python-dateutil==2.8.2
 python-docx==0.8.11
 python-dotenv==0.21.0
@@ -82,6 +83,7 @@ tensorflow-estimator==2.11.0
 tensorflow-hub==0.12.0
 tensorflow-io-gcs-filesystem==0.29.0
 termcolor==2.2.0
+textstat==0.7.3
 thinc==8.1.6
 threadpoolctl==3.1.0
 tokenizers==0.13.2
