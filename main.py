@@ -27,7 +27,7 @@ CUSTOM_MODEL="davinci:ft-personal-2023-01-06-23-00-19"
 TRAINING_DATE = datetime.date(2021, 6, 1)
 
 CUSTOM_PROMPT_1="{}.\n"
-CUSTOM_PROMPT_2="Include the following information:\n{}\nPeople/Organizations:\n{}"
+CUSTOM_PROMPT_2="Include the following information:\n{}\n\nPeople/Organizations:\n{}"
 CUSTOM_PROMPT_3="Date: {}"
 CUSTOM_PROMPT_END = "\n\n###\n\n"
 
